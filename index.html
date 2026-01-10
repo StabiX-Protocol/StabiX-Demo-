@@ -19,12 +19,10 @@
       margin-top: 15px;
       font-weight: bold;
       color: #00ff88;
-      word-break: break-all;
       white-space: pre-line;
     }
   </style>
 
-  <!-- ethers.js MUST be before our script -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 
@@ -40,39 +38,16 @@
     const statusEl = document.getElementById("status");
     const connectBtn = document.getElementById("connectBtn");
 
-    if (typeof window.ethereum === "undefined") {
-      statusEl.innerText = "NO WALLET DETECTED ❌";
-    } else {
-      statusEl.innerText = "Wallet detected ✅";
-    }
-
     connectBtn.onclick = async () => {
       try {
-        const accounts = await ethereum.request({
+        const accounts = await window.ethereum.request({
           method: "eth_requestAccounts"
         });
 
         const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-        statusEl.innerText =
-          "CONNECTED ✅ " + accounts[0];
-
-        // ONLY Vault ABI
-        const vaultAbi = [
-          {
-            "inputs": [],
-            "name": "vaultBalance",
-            "outputs": [
-              {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-              }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-          }
-        ];
+        const res = await fetch("./abis/vault.json");
+        const vaultAbi = await res.json();
 
         const vault = new ethers.Contract(
           VAULT_ADDRESS,
@@ -80,14 +55,14 @@
           provider
         );
 
-        const rawBalance = await vault.vaultBalance();
+        const balance = await vault.vaultBalance();
 
-        statusEl.innerText +=
-          "\nVAULT READ OK ✅" +
-          "\nRaw Balance: " + rawBalance.toString();
+        statusEl.innerText =
+          "CONNECTED ✅ " + accounts[0] +
+          "\nVault Balance (raw): " + balance.toString();
 
       } catch (err) {
-        statusEl.innerText += "\nERROR ❌ " + err.message;
+        statusEl.innerText = "ERROR ❌ " + err.message;
       }
     };
   </script>
