@@ -36,16 +36,15 @@
 
   <script>
     /* ===============================
-       STEP 1: CONTRACT ADDRESSES
+       STEP 1: ADDRESSES
     =============================== */
-    const VAULT_ADDRESS  = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
-    const LEDGER_ADDRESS = "0xb9721c84985f9E566b210E29795f3B0B0bE7513b";
+    const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
 
     const statusEl   = document.getElementById("status");
     const connectBtn = document.getElementById("connectBtn");
 
     /* ===============================
-       STEP 2: WALLET DETECTION
+       STEP 2: WALLET CHECK
     =============================== */
     if (typeof window.ethereum === "undefined") {
       statusEl.innerText = "NO WALLET DETECTED ❌";
@@ -54,10 +53,15 @@
     }
 
     /* ===============================
-       STEP 3: CONNECT WALLET
+       STEP 3: CONNECT + READ
     =============================== */
     connectBtn.onclick = async () => {
       try {
+        if (typeof ethers === "undefined") {
+          statusEl.innerText = "ERROR ❌ ethers.js not loaded";
+          return;
+        }
+
         const accounts = await window.ethereum.request({
           method: "eth_requestAccounts"
         });
@@ -70,11 +74,14 @@
           "CONNECTED ✅ " + accounts[0] + "\nChain: " + chainId;
 
         /* ===============================
-           STEP 4: VAULT ABI LOAD + READ
+           STEP 4: LOAD ABI
         =============================== */
         const res = await fetch("./abis/vault.json");
         const vaultAbi = await res.json();
 
+        /* ===============================
+           STEP 5: READ BALANCE
+        =============================== */
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const vault = new ethers.Contract(
           VAULT_ADDRESS,
@@ -82,9 +89,11 @@
           provider
         );
 
-        // Safe read (owner is common, agar fail hua to error dikhega)
-        const owner = await vault.owner();
-        statusEl.innerText += "\nVAULT READ OK ✅ Owner: " + owner;
+        const balance = await vault.balanceOf(accounts[0]);
+
+        statusEl.innerText +=
+          "\nVAULT READ OK ✅\nBalance: " +
+          ethers.utils.formatUnits(balance, 18);
 
       } catch (err) {
         statusEl.innerText += "\nERROR ❌ " + err.message;
