@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>StabiX Demo</title>
+
+  <!-- ethers v5 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+</head>
+
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>StabiX – Wallet Connect</h2>
+
+  <button onclick="connectWallet()">Connect Wallet</button>
+
+  <p id="status">Not connected</p>
+  <p><b>Address:</b> <span id="address">-</span></p>
+
+  <script>
+    let provider;
+    let signer;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("Wallet not found. OKX / MetaMask install kar");
+        return;
+      }
+
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+
+      const address = await signer.getAddress();
+
+      document.getElementById("status").innerText = "Wallet Connected";
+      document.getElementById("address").innerText = address;
+    }
+  </script>
+</body>
+</html>
