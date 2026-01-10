@@ -20,10 +20,9 @@
       font-weight: bold;
       color: #00ff88;
       white-space: pre-line;
+      word-break: break-all;
     }
   </style>
-
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 
 <body>
@@ -36,33 +35,61 @@
     const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
 
     const statusEl = document.getElementById("status");
-    const connectBtn = document.getElementById("connectBtn");
+    const btn = document.getElementById("connectBtn");
 
-    connectBtn.onclick = async () => {
+    if (!window.ethereum) {
+      statusEl.innerText = "NO WALLET DETECTED ❌";
+    } else {
+      statusEl.innerText = "Wallet detected ✅";
+    }
+
+    btn.onclick = async () => {
       try {
-        const accounts = await window.ethereum.request({
+        const accounts = await ethereum.request({
           method: "eth_requestAccounts"
         });
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-
-        const res = await fetch("./abis/vault.json");
-        const vaultAbi = await res.json();
-
-        const vault = new ethers.Contract(
-          VAULT_ADDRESS,
-          vaultAbi,
-          provider
-        );
-
-        const balance = await vault.vaultBalance();
+        const chainId = await ethereum.request({
+          method: "eth_chainId"
+        });
 
         statusEl.innerText =
           "CONNECTED ✅ " + accounts[0] +
-          "\nVault Balance (raw): " + balance.toString();
+          "\nChain: " + chainId;
 
-      } catch (err) {
-        statusEl.innerText = "ERROR ❌ " + err.message;
+        /* ===============================
+           RAW CONTRACT READ (balanceOf)
+        =============================== */
+
+        const abi = [
+          {
+            "constant": true,
+            "inputs": [{ "name": "account", "type": "address" }],
+            "name": "balanceOf",
+            "outputs": [{ "name": "", "type": "uint256" }],
+            "type": "function"
+          }
+        ];
+
+        const data =
+          "0x70a08231" + accounts[0].replace("0x", "").padStart(64, "0");
+
+        const result = await ethereum.request({
+          method: "eth_call",
+          params: [{
+            to: VAULT_ADDRESS,
+            data: data
+          }, "latest"]
+        });
+
+        const balance = parseInt(result, 16);
+
+        statusEl.innerText +=
+          "\nVAULT READ OK ✅" +
+          "\nRaw Balance: " + balance;
+
+      } catch (e) {
+        statusEl.innerText += "\nERROR ❌ " + e.message;
       }
     };
   </script>
