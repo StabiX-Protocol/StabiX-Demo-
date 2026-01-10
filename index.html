@@ -19,13 +19,10 @@
       margin-top: 15px;
       font-weight: bold;
       color: #00ff88;
-      word-break: break-all;
       white-space: pre-line;
+      word-break: break-all;
     }
   </style>
-
-  <!-- ethers.js -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 
 <body>
@@ -35,73 +32,65 @@
   <p id="status">Waiting...</p>
 
   <script>
-    window.onload = () => {
+    const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
 
-      /* ===============================
-         STEP 1: ADDRESSES
-      =============================== */
-      const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
+    const statusEl = document.getElementById("status");
+    const btn = document.getElementById("connectBtn");
 
-      const statusEl   = document.getElementById("status");
-      const connectBtn = document.getElementById("connectBtn");
-
-      /* ===============================
-         STEP 2: WALLET CHECK
-      =============================== */
-      if (typeof window.ethereum === "undefined") {
-        statusEl.innerText = "NO WALLET DETECTED ❌";
-        return;
-      }
-
-      if (typeof window.ethers === "undefined") {
-        statusEl.innerText = "ethers.js not loaded ❌";
-        return;
-      }
-
+    if (!window.ethereum) {
+      statusEl.innerText = "NO WALLET DETECTED ❌";
+    } else {
       statusEl.innerText = "Wallet detected ✅";
+    }
 
-      /* ===============================
-         STEP 3: CONNECT
-      =============================== */
-      connectBtn.onclick = async () => {
-        try {
-          const accounts = await window.ethereum.request({
-            method: "eth_requestAccounts"
-          });
+    btn.onclick = async () => {
+      try {
+        const accounts = await ethereum.request({
+          method: "eth_requestAccounts"
+        });
 
-          const chainId = await window.ethereum.request({
-            method: "eth_chainId"
-          });
+        const chainId = await ethereum.request({
+          method: "eth_chainId"
+        });
 
-          statusEl.innerText =
-            "CONNECTED ✅ " + accounts[0] + "\nChain: " + chainId;
+        statusEl.innerText =
+          "CONNECTED ✅ " + accounts[0] +
+          "\nChain: " + chainId;
 
-          /* ===============================
-             STEP 4: LOAD ABI
-          =============================== */
-          const res = await fetch("./abis/vault.json");
-          const vaultAbi = await res.json();
+        /* ===============================
+           RAW CONTRACT READ (balanceOf)
+        =============================== */
 
-          /* ===============================
-             STEP 5: READ BALANCE
-          =============================== */
-          const provider = new ethers.providers.Web3Provider(window.ethereum);
-          const vault = new ethers.Contract(
-            VAULT_ADDRESS,
-            vaultAbi,
-            provider
-          );
+        const abi = [
+          {
+            "constant": true,
+            "inputs": [{ "name": "account", "type": "address" }],
+            "name": "balanceOf",
+            "outputs": [{ "name": "", "type": "uint256" }],
+            "type": "function"
+          }
+        ];
 
-          const bal = await vault.balanceOf(accounts[0]);
+        const data =
+          "0x70a08231" + accounts[0].replace("0x", "").padStart(64, "0");
 
-          statusEl.innerText +=
-            "\nVAULT READ OK ✅\nBalance: " +
-            ethers.utils.formatUnits(bal, 18);
+        const result = await ethereum.request({
+          method: "eth_call",
+          params: [{
+            to: VAULT_ADDRESS,
+            data: data
+          }, "latest"]
+        });
 
-        } catch (err) {
-          statusEl.innerText += "\nERROR ❌ " + err.message;
-        }
-      };
+        const balance = parseInt(result, 16);
+
+        statusEl.innerText +=
+          "\nVAULT READ OK ✅" +
+          "\nRaw Balance: " + balance;
+
+      } catch (e) {
+        statusEl.innerText += "\nERROR ❌ " + e.message;
+      }
     };
   </script>
 </body>
