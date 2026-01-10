@@ -1,40 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>StabiX Demo</title>
 
-  <!-- ethers v5 CDN -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      padding: 20px;
+    }
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #00ff88;
+      word-break: break-all;
+    }
+  </style>
+
+  <!-- ethers.js -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 
-<body style="font-family: sans-serif; padding: 20px;">
-  <h2>StabiX – Wallet Connect</h2>
+<body>
 
-  <button onclick="connectWallet()">Connect Wallet</button>
+  <h2>StabiX Demo App</h2>
 
-  <p id="status">Not connected</p>
-  <p><b>Address:</b> <span id="address">-</span></p>
+  <button id="connectBtn">Connect Wallet</button>
 
-  <script>
-    let provider;
-    let signer;
+  <p id="status">Waiting...</p>
 
-    async function connectWallet() {
-      if (!window.ethereum) {
-        alert("Wallet not found. OKX / MetaMask install kar");
-        return;
-      }
-
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
-
-      const address = await signer.getAddress();
-
-      document.getElementById("status").innerText = "Wallet Connected";
-      document.getElementById("address").innerText = address;
-    }
-  </script>
 </body>
 </html>
