@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>StabiX Demo</title>
 
   <style>
@@ -11,13 +11,10 @@
       color: #fff;
       padding: 20px;
     }
-
     button {
       padding: 12px 18px;
       font-size: 16px;
-      cursor: pointer;
     }
-
     #status {
       margin-top: 15px;
       font-weight: bold;
@@ -31,25 +28,33 @@
 </head>
 
 <body>
-
   <h2>StabiX Demo App</h2>
 
   <button id="connectBtn">Connect Wallet</button>
   <p id="status">Waiting...</p>
 
-  <!-- MAIN SCRIPT (BODY KE END ME) -->
   <script>
-    const statusEl = document.getElementById("status");
+    /* ===============================
+       STEP 1: CONTRACT ADDRESSES
+    =============================== */
+    const VAULT_ADDRESS  = 0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21
+    const LEDGER_ADDRESS = 0xb9721c84985f9E566b210E29795f3B0B0bE7513b
+
+    const statusEl  = document.getElementById("status");
     const connectBtn = document.getElementById("connectBtn");
 
-    // STEP 0: wallet detect
+    /* ===============================
+       STEP 2: WALLET DETECTION
+    =============================== */
     if (typeof window.ethereum === "undefined") {
       statusEl.innerText = "NO WALLET DETECTED ❌";
     } else {
       statusEl.innerText = "Wallet detected ✅";
     }
 
-    // STEP 1: connect wallet
+    /* ===============================
+       STEP 3: CONNECT WALLET
+    =============================== */
     connectBtn.onclick = async () => {
       try {
         const accounts = await window.ethereum.request({
@@ -61,15 +66,12 @@
         });
 
         statusEl.innerText =
-          "CONNECTED ✅\n" +
-          "Address: " + accounts[0] + "\n" +
-          "Chain ID: " + chainId;
+          "CONNECTED ✅ " + accounts[0] + " | Chain: " + chainId;
 
       } catch (err) {
         statusEl.innerText = "FAILED ❌ " + err.message;
       }
     };
   </script>
-
 </body>
 </html>
