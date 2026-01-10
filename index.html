@@ -20,6 +20,7 @@
       font-weight: bold;
       color: #00ff88;
       word-break: break-all;
+      white-space: pre-line;
     }
   </style>
 
@@ -37,10 +38,10 @@
     /* ===============================
        STEP 1: CONTRACT ADDRESSES
     =============================== */
-    const VAULT_ADDRESS  = 0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21
-    const LEDGER_ADDRESS = 0xb9721c84985f9E566b210E29795f3B0B0bE7513b
+    const VAULT_ADDRESS  = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
+    const LEDGER_ADDRESS = "0xb9721c84985f9E566b210E29795f3B0B0bE7513b";
 
-    const statusEl  = document.getElementById("status");
+    const statusEl   = document.getElementById("status");
     const connectBtn = document.getElementById("connectBtn");
 
     /* ===============================
@@ -66,10 +67,27 @@
         });
 
         statusEl.innerText =
-          "CONNECTED ✅ " + accounts[0] + " | Chain: " + chainId;
+          "CONNECTED ✅ " + accounts[0] + "\nChain: " + chainId;
+
+        /* ===============================
+           STEP 4: VAULT ABI LOAD + READ
+        =============================== */
+        const res = await fetch("./abis/vault.json");
+        const vaultAbi = await res.json();
+
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const vault = new ethers.Contract(
+          VAULT_ADDRESS,
+          vaultAbi,
+          provider
+        );
+
+        // Safe read (owner is common, agar fail hua to error dikhega)
+        const owner = await vault.owner();
+        statusEl.innerText += "\nVAULT READ OK ✅ Owner: " + owner;
 
       } catch (err) {
-        statusEl.innerText = "FAILED ❌ " + err.message;
+        statusEl.innerText += "\nERROR ❌ " + err.message;
       }
     };
   </script>
