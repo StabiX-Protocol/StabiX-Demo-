@@ -14,6 +14,7 @@
     button {
       padding: 12px 18px;
       font-size: 16px;
+      cursor: pointer;
     }
     #status {
       margin-top: 15px;
@@ -28,14 +29,18 @@
 <body>
   <h2>StabiX Demo App</h2>
 
+  <!-- BUTTON -->
   <button id="connectBtn">Connect Wallet</button>
+
+  <!-- OUTPUT -->
   <p id="status">Waiting...</p>
 
   <script>
     const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
+    const USDC_ADDRESS  = "0xYOUR_USDC_ADDRESS"; // same network
 
-    const statusEl = document.getElementById("status");
     const btn = document.getElementById("connectBtn");
+    const statusEl = document.getElementById("status");
 
     if (!window.ethereum) {
       statusEl.innerText = "NO WALLET DETECTED ❌";
@@ -43,47 +48,55 @@
       statusEl.innerText = "Wallet detected ✅";
     }
 
+    // 🔥 BUTTON LOGIC STARTS HERE
     btn.onclick = async () => {
       try {
+        // 1️⃣ Connect wallet
         const accounts = await ethereum.request({
           method: "eth_requestAccounts"
         });
 
+        // 2️⃣ Get chain
         const chainId = await ethereum.request({
           method: "eth_chainId"
         });
 
         statusEl.innerText =
-          "CONNECTED ✅ " + accounts[0] +
-          "\nChain: " + chainId;
+          "CONNECTED ✅\n" +
+          "User: " + accounts[0] + "\n" +
+          "Chain: " + chainId;
 
-        /* ===============================
-           CALL vaultBalance() (CORRECT)
-        =============================== */
+        // 3️⃣ Read USDC balance of VAULT (REAL LOGIC)
+        // balanceOf(address) selector
+        const selector = "0x70a08231";
 
-        // function selector of vaultBalance()
-        const data = "0x8da5cb5b"; 
-        // ❌ NO params, kyunki vaultBalance() me koi input nahi
+        // pad VAULT address
+        const paddedVault =
+          VAULT_ADDRESS.replace("0x", "").padStart(64, "0");
+
+        const data = selector + paddedVault;
 
         const result = await ethereum.request({
           method: "eth_call",
           params: [{
-            to: VAULT_ADDRESS,
+            to: USDC_ADDRESS,
             data: data
           }, "latest"]
         });
 
-        const rawBalance = BigInt(result);
-        const usdcBalance = Number(rawBalance) / 1e6;
+        // 4️⃣ Decode result
+        const raw = BigInt(result);
+        const balance = Number(raw) / 1e6; // USDC = 6 decimals
 
         statusEl.innerText +=
-          "\nVAULT READ OK ✅" +
-          "\nVault USDC Balance: " + usdcBalance;
+          "\n\nVAULT BALANCE READ ✅" +
+          "\nVault USDC Balance: " + balance;
 
       } catch (e) {
-        statusEl.innerText += "\nERROR ❌ " + e.message;
+        statusEl.innerText += "\n\nERROR ❌ " + e.message;
       }
     };
+    // 🔥 BUTTON LOGIC ENDS HERE
   </script>
 </body>
 </html>
