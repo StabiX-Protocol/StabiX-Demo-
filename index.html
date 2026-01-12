@@ -24,6 +24,9 @@
       word-break: break-all;
     }
   </style>
+
+  <!-- ethers.js (REQUIRED) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
 
 <body>
@@ -37,20 +40,10 @@
        CONSTANTS
     =============================== */
     const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
-    const USDC_ADDRESS  = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // ETH mainnet
+    const USDC_ADDRESS  = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // ETH mainnet USDC
 
     const btn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("status");
-
-    /* ===============================
-       HELPERS
-    =============================== */
-    function cleanAddress(addr) {
-      if (!addr.startsWith("0x")) throw new Error("Address must start with 0x");
-      const hex = addr.slice(2);
-      if (hex.length !== 40) throw new Error("Invalid address length");
-      return hex;
-    }
 
     /* ===============================
        WALLET CHECK
@@ -62,16 +55,16 @@
     }
 
     /* ===============================
-       BUTTON LOGIC
+       BUTTON LOGIC (FINAL)
     =============================== */
     btn.onclick = async () => {
       try {
         // 1️⃣ Connect wallet
-        const accounts = await ethereum.request({
+        const accounts = await window.ethereum.request({
           method: "eth_requestAccounts"
         });
 
-        const chainId = await ethereum.request({
+        const chainId = await window.ethereum.request({
           method: "eth_chainId"
         });
 
@@ -80,29 +73,24 @@
           "User: " + accounts[0] + "\n" +
           "Chain: " + chainId;
 
-        // 2️⃣ Prepare balanceOf(vault)
-        const selector = "0x70a08231"; // balanceOf(address)
-        const vaultHex = cleanAddress(VAULT_ADDRESS);
-        const data = selector + vaultHex.padStart(64, "0");
+        // 2️⃣ Setup ethers provider
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-        // 3️⃣ eth_call
-        const result = await ethereum.request({
-          method: "eth_call",
-          params: [{
-            to: USDC_ADDRESS,
-            data: data
-          }, "latest"]
-        });
+        // 3️⃣ Minimal USDC ABI
+        const usdcAbi = [
+          "function balanceOf(address) view returns (uint256)"
+        ];
 
-        // 4️⃣ Handle empty result
-        if (!result || result === "0x") {
-          statusEl.innerText +=
-            "\n\nVAULT BALANCE ⚠️\n0 USDC (vault empty)";
-          return;
-        }
+        // 4️⃣ Contract instance
+        const usdc = new ethers.Contract(
+          USDC_ADDRESS,
+          usdcAbi,
+          provider
+        );
 
-        // 5️⃣ Decode
-        const raw = BigInt(result);
+        // 5️⃣ Read vault balance
+        const raw = await usdc.balanceOf(VAULT_ADDRESS);
+
         const balance = Number(raw) / 1e6; // USDC = 6 decimals
 
         statusEl.innerText +=
