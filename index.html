@@ -33,24 +33,40 @@
   <p id="status">Waiting...</p>
 
   <script>
+    /* ===============================
+       CONSTANTS
+    =============================== */
     const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
-
-    // ⚠️ REPLACE with REAL USDC address of SAME CHAIN
-    // Ethereum mainnet example:
-    // const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-    const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+    const USDC_ADDRESS  = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // ETH mainnet
 
     const btn = document.getElementById("connectBtn");
     const statusEl = document.getElementById("status");
 
+    /* ===============================
+       HELPERS
+    =============================== */
+    function cleanAddress(addr) {
+      if (!addr.startsWith("0x")) throw new Error("Address must start with 0x");
+      const hex = addr.slice(2);
+      if (hex.length !== 40) throw new Error("Invalid address length");
+      return hex;
+    }
+
+    /* ===============================
+       WALLET CHECK
+    =============================== */
     if (!window.ethereum) {
       statusEl.innerText = "NO WALLET DETECTED ❌";
     } else {
       statusEl.innerText = "Wallet detected ✅";
     }
 
+    /* ===============================
+       BUTTON LOGIC
+    =============================== */
     btn.onclick = async () => {
       try {
+        // 1️⃣ Connect wallet
         const accounts = await ethereum.request({
           method: "eth_requestAccounts"
         });
@@ -64,13 +80,12 @@
           "User: " + accounts[0] + "\n" +
           "Chain: " + chainId;
 
-        // balanceOf(address) selector
-        const selector = "0x70a08231";
-        const paddedVault =
-          VAULT_ADDRESS.replace("0x", "").padStart(64, "0");
+        // 2️⃣ Prepare balanceOf(vault)
+        const selector = "0x70a08231"; // balanceOf(address)
+        const vaultHex = cleanAddress(VAULT_ADDRESS);
+        const data = selector + vaultHex.padStart(64, "0");
 
-        const data = selector + paddedVault;
-
+        // 3️⃣ eth_call
         const result = await ethereum.request({
           method: "eth_call",
           params: [{
@@ -79,16 +94,16 @@
           }, "latest"]
         });
 
-        // ✅ SAFETY CHECK (MOST IMPORTANT)
-        if (result === "0x") {
+        // 4️⃣ Handle empty result
+        if (!result || result === "0x") {
           statusEl.innerText +=
-            "\n\nVAULT BALANCE READ ⚠️" +
-            "\nResult empty → 0 USDC in vault";
+            "\n\nVAULT BALANCE ⚠️\n0 USDC (vault empty)";
           return;
         }
 
+        // 5️⃣ Decode
         const raw = BigInt(result);
-        const balance = Number(raw) / 1e6;
+        const balance = Number(raw) / 1e6; // USDC = 6 decimals
 
         statusEl.innerText +=
           "\n\nVAULT BALANCE READ ✅" +
