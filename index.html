@@ -2,25 +2,141 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Test</title>
+  <title>StabiX Demo</title>
 
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      padding: 20px;
+    }
+    button {
+      padding: 12px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-top: 10px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #00ff88;
+      white-space: pre-line;
+      word-break: break-all;
+    }
+  </style>
+
+  <!-- ethers.js -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 </head>
+
 <body>
+  <h2>StabiX Demo App (Sepolia)</h2>
 
-<h2>Ethers Test</h2>
-<button onclick="test()">Test</button>
-<p id="out"></p>
+  <button id="connectBtn">Connect Wallet</button>
+  <button id="approveBtn" disabled>Approve 100 USDC</button>
 
-<script>
-function test() {
-  if (typeof ethers === "undefined") {
-    document.getElementById("out").innerText = "❌ ethers NOT loaded";
-  } else {
-    document.getElementById("out").innerText = "✅ ethers loaded OK";
-  }
-}
-</script>
+  <p id="status">Waiting...</p>
 
+  <script>
+    /* ===============================
+       CONSTANTS (SEPOLIA)
+    =============================== */
+    const VAULT_ADDRESS = "0x79fcae62cF0D747cF3b6F2Eb3B231089208cEC21";
+
+    // ✅ USDC (Sepolia – Circle)
+    const USDC_ADDRESS  = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+
+    const connectBtn = document.getElementById("connectBtn");
+    const approveBtn = document.getElementById("approveBtn");
+    const statusEl = document.getElementById("status");
+
+    let provider;
+    let signer;
+    let userAddress;
+
+    /* ===============================
+       WALLET CHECK
+    =============================== */
+    if (!window.ethereum) {
+      statusEl.innerText = "NO WALLET DETECTED ❌";
+    } else {
+      statusEl.innerText = "Wallet detected ✅";
+    }
+
+    /* ===============================
+       CONNECT WALLET
+    =============================== */
+    connectBtn.onclick = async () => {
+      try {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        const network = await provider.getNetwork();
+
+        if (network.chainId !== 11155111) {
+          throw new Error("Please switch to Sepolia network");
+        }
+
+        statusEl.innerText =
+          "CONNECTED ✅\n" +
+          "User: " + userAddress + "\n" +
+          "Chain: Sepolia";
+
+        // Enable approve button
+        approveBtn.disabled = false;
+
+        // Read vault USDC balance
+        const usdcAbi = [
+          "function balanceOf(address) view returns (uint256)"
+        ];
+
+        const usdc = new ethers.Contract(USDC_ADDRESS, usdcAbi, provider);
+        const raw = await usdc.balanceOf(VAULT_ADDRESS);
+        const balance = Number(raw) / 1e6;
+
+        statusEl.innerText +=
+          "\n\nVAULT BALANCE READ ✅" +
+          "\nVault USDC Balance: " + balance;
+
+      } catch (e) {
+        statusEl.innerText += "\n\nERROR ❌ " + e.message;
+      }
+    };
+
+    /* ===============================
+       APPROVE 100 USDC
+    =============================== */
+    approveBtn.onclick = async () => {
+      try {
+        const usdcAbi = [
+          "function approve(address spender, uint256 amount) returns (bool)"
+        ];
+
+        const usdc = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
+        const amount = ethers.utils.parseUnits("100", 6);
+
+        const tx = await usdc.approve(VAULT_ADDRESS, amount);
+
+        statusEl.innerText +=
+          "\n\nAPPROVE SENT ✅" +
+          "\nTx: " + tx.hash;
+
+        await tx.wait();
+
+        statusEl.innerText += "\nAPPROVE CONFIRMED ✅";
+
+      } catch (e) {
+        statusEl.innerText += "\n\nAPPROVE ERROR ❌ " + e.message;
+      }
+    };
+  </script>
 </body>
 </html>
